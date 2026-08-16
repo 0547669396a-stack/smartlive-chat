@@ -1,0 +1,12 @@
+{
+  "name": "smartlive-chat-server",
+  "version": "2.0.0",
+  "description": "SmartLive WebSocket Chat Server with Token Auth",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "socket.io": "^4.7.0"
+  }
+}
