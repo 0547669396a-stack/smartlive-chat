@@ -17,7 +17,7 @@ const crypto = require('crypto');
 const { Server } = require('socket.io');
 
 const PORT         = process.env.PORT || 3200;
-const CORS_ORIGIN  = process.env.CORS_ORIGIN || 'http://localhost';
+const CORS_ORIGIN  = process.env.CORS_ORIGIN || '*';
 const WP_REST_URL  = process.env.WP_REST_URL || 'http://localhost/wp-json/smartlive/v1';
 const TOKEN_SECRET = process.env.TOKEN_SECRET || '';
 
@@ -29,26 +29,10 @@ if (!TOKEN_SECRET) {
 const SERVER_TOKEN = crypto.createHmac('sha256', TOKEN_SECRET).update('server_push').digest('hex');
 
 // ── HTTP server (also handles internal push from WP) ─────────
-const allowedOrigins = CORS_ORIGIN.split(',').map(v => v.trim()).filter(Boolean);
-
 const app = http.createServer((req, res) => {
-    const origin = req.headers.origin;
-    if (origin && allowedOrigins.includes(origin)) {
-        res.setHeader('Access-Control-Allow-Origin', origin);
-        res.setHeader('Vary', 'Origin');
-    }
-    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,X-Server-Token');
-
-    if (req.method === 'OPTIONS') {
-        res.writeHead(204); res.end();
-        return;
-    }
-
     // Health check
     if (req.method === 'GET' && req.url === '/') {
-        res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
-        res.end('SmartLive Chat OK');
+        res.writeHead(200); res.end('SmartLive Chat OK');
         return;
     }
 
@@ -72,14 +56,14 @@ const app = http.createServer((req, res) => {
         return;
     }
 
+    // Let Socket.io handle its own paths
+    if (req.url.startsWith('/socket.io')) return;
+
     res.writeHead(404); res.end('Not found');
 });
 
 const io = new Server(app, {
-    cors: { origin: allowedOrigins, methods: ['GET', 'POST'] },
-    transports: ['polling', 'websocket'],
-    pingInterval: 25000,
-    pingTimeout: 20000,
+    cors: { origin: CORS_ORIGIN.split(','), methods: ['GET', 'POST'] },
 });
 
 // ── State ────────────────────────────────────────────────────
